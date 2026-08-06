@@ -1,12 +1,12 @@
 {
-  "name": "novixa-admin-root",
+  "name": "novixa_admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "cd novixa_admin && npm run dev",
-    "build": "cd novixa_admin && npm run build",
-    "start": "cd novixa_admin && npm run start",
-    "lint": "cd novixa_admin && npm run lint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
