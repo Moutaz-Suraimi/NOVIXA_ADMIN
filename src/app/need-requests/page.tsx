@@ -38,11 +38,13 @@ export default function NeedRequestsPage() {
     try {
       const { data, error } = await supabase
         .from('need_requests')
-        .select('*, categories(name)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
         setRequests(data as NeedRequest[]);
+      } else if (error) {
+        console.error('Error fetching need_requests:', error.message);
       }
     } catch (e) {
       console.error(e);
@@ -59,7 +61,9 @@ export default function NeedRequestsPage() {
     const matchesSearch =
       req.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.city?.toLowerCase().includes(searchQuery.toLowerCase());
+      req.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (req as any).customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (req as any).customer_phone?.includes(searchQuery);
 
     const matchesStatus = selectedStatus === 'all' || req.status === selectedStatus;
 
@@ -133,7 +137,7 @@ export default function NeedRequestsPage() {
           <Search className="w-4 h-4 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="ابحث باسم المنتج المطلوب، المدينة، أو الوصف..."
+            placeholder="ابحث باسم المنتج، العميل، الهاتف، أو المدينة..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pr-11 pl-4 py-3 rounded-2xl glass-input text-sm text-slate-100"
@@ -168,74 +172,100 @@ export default function NeedRequestsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredRequests.map((req) => (
-            <div
-              key={req.id}
-              className="glass-panel glass-panel-hover p-6 rounded-3xl flex flex-col justify-between space-y-4 relative"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-extrabold text-white text-base leading-snug">
-                    {req.product_name}
-                  </h3>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-bold border flex-shrink-0 ${
-                      req.status === 'pending'
-                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+          {filteredRequests.map((req) => {
+            const customerName = (req as any).customer_name;
+            const customerPhone = (req as any).customer_phone;
+            return (
+              <div
+                key={req.id}
+                className="glass-panel glass-panel-hover p-6 rounded-3xl flex flex-col justify-between space-y-4 relative"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-extrabold text-white text-base leading-snug">
+                      {req.product_name}
+                    </h3>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold border flex-shrink-0 ${
+                        req.status === 'pending'
+                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          : req.status === 'reviewing'
+                          ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                          : req.status === 'fulfilled'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      }`}
+                    >
+                      {req.status === 'pending'
+                        ? 'جديد (معلق)'
                         : req.status === 'reviewing'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                        ? 'قيد المراجعة'
                         : req.status === 'fulfilled'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                    }`}
-                  >
-                    {req.status === 'pending'
-                      ? 'جديد (معلق)'
-                      : req.status === 'reviewing'
-                      ? 'قيد المراجعة'
-                      : req.status === 'fulfilled'
-                      ? 'تم التوفير'
-                      : 'مرفوض'}
+                        ? 'تم التوفير'
+                        : 'مرفوض'}
+                    </span>
+                  </div>
+
+                  {/* Customer Contact Info */}
+                  {(customerName || customerPhone) && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+                      {customerName && (
+                        <div className="flex items-center gap-2 text-xs text-amber-300">
+                          <span className="font-bold">👤</span>
+                          <span>{customerName}</span>
+                        </div>
+                      )}
+                      {customerPhone && (
+                        <div className="flex items-center gap-2 text-xs text-amber-300">
+                          <span className="font-bold">📞</span>
+                          <span dir="ltr">{customerPhone}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
+                    {req.description || 'لا يوجد وصف تفصيلي'}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <span>المدينة: {req.city || '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <DollarSign className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>الميزانية: {req.budget ? `${req.budget} ر.ي` : 'غير محددة'}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 col-span-2">
+                      <PackageCheck className="w-3.5 h-3.5 text-violet-400" />
+                      <span>القسم: {(req as any).category_id || '—'}</span>
+                    </div>
+                  </div>
+
+                  {req.admin_notes && (
+                    <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300">
+                      <span className="font-bold block text-cyan-400 mb-0.5">ملاحظة الإدارة:</span>
+                      {req.admin_notes}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500">
+                    {new Date(req.created_at).toLocaleDateString('ar-SA')}
                   </span>
+
+                  <button
+                    onClick={() => handleOpenModal(req)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-all"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" /> تغيير الحالة / الملاحظات
+                  </button>
                 </div>
-
-                <p className="text-xs text-slate-400 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
-                  {req.description || 'لا يوجد وصف تفصيلي'}
-                </p>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-1">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span>المدينة: {req.city || 'الرياض'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <DollarSign className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>الميزانية: {req.budget ? `${req.budget} ر.س` : 'غير محددة'}</span>
-                  </div>
-                </div>
-
-                {req.admin_notes && (
-                  <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300">
-                    <span className="font-bold block text-cyan-400 mb-0.5">ملاحظة الإدارة:</span>
-                    {req.admin_notes}
-                  </div>
-                )}
               </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500">
-                  {new Date(req.created_at).toLocaleDateString('ar-SA')}
-                </span>
-
-                <button
-                  onClick={() => handleOpenModal(req)}
-                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-300 font-bold text-xs flex items-center gap-1.5 transition-all"
-                >
-                  <MessageSquare className="w-3.5 h-3.5" /> تغيير الحالة / الملاحظات
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

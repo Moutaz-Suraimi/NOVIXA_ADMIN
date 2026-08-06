@@ -15,7 +15,6 @@ import {
   X,
   ChevronLeft,
   LogOut,
-  Pill,
   Image as ImageIcon,
   Users,
   Percent,
@@ -24,14 +23,13 @@ import { supabase } from '@/lib/supabase';
 
 const navItems = [
   { name: 'الرئيسية', href: '/', icon: LayoutDashboard, badge: null },
-  { name: 'قسم الصيدلية', href: '/admin/pharmacy', icon: Pill, badge: 'جديد' },
   { name: 'البانرات والعروض', href: '/admin/banners', icon: ImageIcon, badge: null },
   { name: 'إدارة المستخدمين', href: '/admin/users', icon: Users, badge: null },
   { name: 'العروض والخصومات', href: '/admin/discounts', icon: Percent, badge: null },
   { name: 'متابعة الطلبات', href: '/admin/orders', icon: ShoppingCart, badge: null },
   { name: 'طلبات الاحتياج', href: '/need-requests', icon: FileQuestion, badge: 'جديد' },
   { name: 'كتالوج المنتجات', href: '/products', icon: Package, badge: null },
-  { name: 'إدارة الأقسام', href: '/categories', icon: Layers, badge: null },
+  { name: 'إدارة الأقسام والصيدلية', href: '/categories', icon: Layers, badge: null },
   { name: 'إعدادات التطبيق', href: '/settings', icon: Settings, badge: null },
 ];
 
